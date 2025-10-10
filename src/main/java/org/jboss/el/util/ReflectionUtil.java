@@ -128,7 +128,7 @@ public final class ReflectionUtil {
         return s;
     }
 
-    private static Method pickBest(Class[] paramTypes, Method a, Method b) {
+    private static Method pickBest(Class<?>[] paramTypes, Method a, Method b) {
         int r = 0;
         for (int i = 0; i < paramTypes.length; i++) {
             if (paramTypes[i] != null) {
@@ -139,7 +139,7 @@ public final class ReflectionUtil {
         return (r >= 0) ? a : b;
     }
 
-    private static int matches(Class t, Class p) {
+    private static int matches(Class<?> t, Class<?> p) {
         if (t == p || t.equals(p)) {
             return 2;
         }
@@ -153,9 +153,9 @@ public final class ReflectionUtil {
 
     private static final class MethodCache {
         private final Method[] methods;
-        private final Class type;
+        private final Class<?> type;
         private final Map<String,Object> cache;
-        public MethodCache(Class type) {
+        public MethodCache(Class<?> type) {
             boolean isAnonymous = type.isAnonymousClass();
             boolean isPrivate = !Modifier.isPublic(type.getModifiers());
 
@@ -171,17 +171,17 @@ public final class ReflectionUtil {
                 if (c == null) {
                     this.cache.put(m.getName(), m);
                 } else if (c instanceof Method) {
-                    List l = new ArrayList(5);
+                    List<Method> l = new ArrayList<Method>(5);
                     l.add(m);
-                    l.add(c);
+                    l.add((Method) c);
                     this.cache.put(m.getName(), l);
                 } else {
-                    ((List) c).add(m);
+                    ((List<Method>) c).add(m);
                 }
             }
         }
 
-        public Class getType() {
+        public Class<?> getType() {
             return this.type;
         }
 
@@ -190,7 +190,7 @@ public final class ReflectionUtil {
             if (o == null) return null;
             if (o instanceof Method) return (Method) o;
             Method r = null;
-            Class[] types = paramTypes(in);
+            Class<?>[] types = paramTypes(in);
             for (Method m : (List<Method>) o) {
                 if (m.getParameterTypes().length == types.length) {
                     if (r == null) {
@@ -207,7 +207,7 @@ public final class ReflectionUtil {
     public static Method findMethod(Object base, Object name, Object[] params) {
         Method r = null;
         if (base != null && name != null) {
-            Class type = base.getClass();
+            Class<?> type = base.getClass();
             String methodName = ELSupport.coerceToString(name);
             MethodCache m = methodCache.get(type);
 //            if (m == null || type != m.getType()) {
@@ -239,7 +239,7 @@ public final class ReflectionUtil {
      * @throws MethodNotFoundException
      */
     public static Method getMethod(Object base, Object property,
-            Class[] paramTypes) throws MethodNotFoundException {
+            Class<?>[] paramTypes) throws MethodNotFoundException {
         if (base == null || property == null) {
             throw new MethodNotFoundException(MessageFactory.get(
                     "error.method.notfound", base, property,
@@ -261,7 +261,7 @@ public final class ReflectionUtil {
     }
 
     public static MethodInfo getMethodInfo(Object base, Object property,
-            Class[] paramTypes) throws MethodNotFoundException {
+            Class<?>[] paramTypes) throws MethodNotFoundException {
         Method m = ReflectionUtil.getMethod(base, property, paramTypes);
         return new MethodInfo(m.getName(), m.getReturnType(), m
                 .getParameterTypes());
@@ -283,7 +283,7 @@ public final class ReflectionUtil {
     public static Object invokeMethod(Object base, Method m, Object[] paramValues) throws ELException {
         if (m == null) throw new MethodNotFoundException();
 
-        Class[] paramTypes = m.getParameterTypes();
+        Class<?>[] paramTypes = m.getParameterTypes();
         Object[] params = null;
 
         if (paramTypes.length == 0) {
@@ -299,7 +299,7 @@ public final class ReflectionUtil {
                 params[i] = ELSupport.coerceToType(paramValues[i], paramTypes[i]);
             }
 
-            Class argType = paramTypes[i].getComponentType();
+            Class<?> argType = paramTypes[i].getComponentType();
             if (paramTypes.length == paramValues.length) {
                 if (paramValues[i] == null) {
                     params[i] = Array.newInstance(argType, 0);
@@ -340,7 +340,7 @@ public final class ReflectionUtil {
     }
 
     public static Object invokeMethod(Object base, Object property,
-            Class[] paramTypes, Object[] paramValues) throws ELException,
+            Class<?>[] paramTypes, Object[] paramValues) throws ELException,
             MethodNotFoundException {
         Method m = getMethod(base, property, paramTypes);
         return invokeMethod(base, m, paramValues);
@@ -364,11 +364,11 @@ public final class ReflectionUtil {
         return null;
     }
 
-    private static Class[] NO_TYPES = new Class[0];
+    private static Class<?>[] NO_TYPES = new Class<?>[0];
 
-    protected static final Class[] paramTypes(Object[] ar) {
+    protected static final Class<?>[] paramTypes(Object[] ar) {
         if (ar != null) {
-            Class[] p = new Class[ar.length];
+            Class<?>[] p = new Class<?>[ar.length];
             for (int i = 0; i < ar.length; i++) {
                 if (ar[i] != null) {
                     p[i] = ar[i].getClass();

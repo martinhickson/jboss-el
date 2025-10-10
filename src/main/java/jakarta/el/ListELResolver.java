@@ -28,8 +28,8 @@ public class ListELResolver extends ELResolver {
     
     private final boolean readOnly;
     
-    private final static Class UNMODIFIABLE = Collections.unmodifiableList(
-            new ArrayList()).getClass();
+    private final static Class<?> UNMODIFIABLE = Collections.unmodifiableList(
+            new ArrayList<Object>()).getClass();
     
     public ListELResolver() {
         this.readOnly = false;
@@ -98,7 +98,7 @@ public class ListELResolver extends ELResolver {
             
             int idx = coerce(property);
             try {
-                list.set(idx, value);
+                ((List<Object>) list).set(idx, value);
             } catch (UnsupportedOperationException e) {
                 throw new PropertyNotWritableException(e);
             } catch (IndexOutOfBoundsException e) {

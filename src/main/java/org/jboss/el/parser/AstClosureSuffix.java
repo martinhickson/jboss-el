@@ -62,7 +62,7 @@ public final class AstClosureSuffix extends ValueSuffixNode {
             return Collections.EMPTY_LIST;
         } else {
             Object v;
-            Collection r = new ClosureList(c.size());
+            Collection<Object> r = new ClosureList(c.size());
             AstClosure closure = this.closure();
             for (Object o : c) {
                 v = closure.getValue(o, ctx);
@@ -86,7 +86,7 @@ public final class AstClosureSuffix extends ValueSuffixNode {
             return null;
         } else {
             Object v;
-            Collection r = new ClosureList(c.size());
+            Collection<Object> r = new ClosureList(c.size());
             AstClosure closure = this.closure();
             for (Object o : c) {
                 v = closure.getValue(o, ctx);
@@ -119,7 +119,7 @@ public final class AstClosureSuffix extends ValueSuffixNode {
             return Collections.EMPTY_LIST;
         } else {
             Object v;
-            Collection r = new ClosureList(c.size());
+            Collection<Object> r = new ClosureList(c.size());
             AstClosure closure = this.closure();
             for (Object o : c) {
                 v = closure.invoke(o, ctx, paramTypes, paramValues);

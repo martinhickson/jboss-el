@@ -284,10 +284,10 @@ public class BeanELResolver extends ELResolver {
 		String prop = property.toString();
 
 		BeanProperties props = this.cache.get(type.getName());
-//		if (props == null || type != props.getType()) {
-//			props = new BeanProperties(type);
-//			this.cache.put(type.getName(), props);
-//		}
+		if (props == null || type != props.getType()) {
+			props = new BeanProperties(type);
+			this.cache.put(type.getName(), props);
+		}
 
 		return props.get(ctx, prop);
 	}
@@ -300,7 +300,7 @@ public class BeanELResolver extends ELResolver {
 		Method mp = null;
 		for (int i = 0; i < inf.length; i++) {
 			try {
-				mp = inf[i].getMethod(m.getName(), (Class[]) m.getParameterTypes());
+				mp = inf[i].getMethod(m.getName(), m.getParameterTypes());
 				mp = getMethod(mp.getDeclaringClass(), mp);
 				if (mp != null) {
 					return mp;
@@ -311,7 +311,7 @@ public class BeanELResolver extends ELResolver {
 		Class sup = type.getSuperclass();
 		if (sup != null) {
 			try {
-				mp = sup.getMethod(m.getName(), (Class[]) m.getParameterTypes());
+				mp = sup.getMethod(m.getName(), m.getParameterTypes());
 				mp = getMethod(mp.getDeclaringClass(), mp);
 				if (mp != null) {
 					return mp;
