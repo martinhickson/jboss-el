@@ -1,0 +1,116 @@
+name: Build and Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Maven version to set'
+        required: false
+        default: '1.0_02.javax.bravura.3'
+        type: string
+      publish_to_github_packages:
+        description: 'Publish to GitHub Packages'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Suppress Maven transfer logs
+      MAVEN_OPTS: -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn  
+  
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+    
+    - name: Create release branch and set version
+      if: ${{ inputs.version != '' }}
+      run: |
+        echo "Creating release branch: release/${{ inputs.version }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -b release/${{ inputs.version }}
+        
+        echo "Setting Maven version to ${{ inputs.version }}"
+        mvn versions:set -ntp -DnewVersion=${{ inputs.version }} -DgenerateBackupPoms=false
+        echo "Version updated successfully"
+        echo "New version in pom.xml:"
+        grep '<version>' pom.xml | head -1 || echo "  <version>${{ inputs.version }}</version>"
+        
+        echo "Committing version changes"
+        git add pom.xml
+        git commit -m "chore: bump version to ${{ inputs.version }}"
+        
+        echo "Creating tag v${{ inputs.version }}"
+        git tag -a "v${{ inputs.version }}" -m "Release version ${{ inputs.version }}"
+        
+        echo "Pushing release branch and tag"
+        git push origin release/${{ inputs.version }}
+        git push origin "v${{ inputs.version }}"
+        
+        echo "✅ Release branch and tag created successfully!"
+        echo "   Branch: release/${{ inputs.version }}"
+        echo "   Tag: v${{ inputs.version }}"
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Build with Maven
+      run: mvn clean install -ntp
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: maven-build-artifacts
+        path: target/*.jar
+        
+    - name: Configure Maven for GitHub Packages
+      if: ${{ inputs.publish_to_github_packages == true }}
+      run: |
+        mkdir -p ~/.m2
+        cat > ~/.m2/settings.xml << 'EOF'
+        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                                      http://maven.apache.org/xsd/settings-1.0.0.xsd">
+          <servers>
+            <server>
+              <id>github</id>
+              <username>${{ github.actor }}</username>
+              <password>${{ secrets.GITHUB_TOKEN }}</password>
+            </server>
+          </servers>
+        </settings>
+        EOF
+        echo "Maven settings configured for GitHub Packages"
+        echo "Settings file contents:"
+        cat ~/.m2/settings.xml
+        
+    - name: Publish to GitHub Packages
+      if: ${{ inputs.publish_to_github_packages == true }}
+      run: |
+        echo "Publishing to GitHub Packages..."
+        echo "Version: ${{ inputs.version }}"
+        echo "Actor: ${{ github.actor }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Checking Maven settings..."
+        cat ~/.m2/settings.xml
+        echo "Running Maven deploy..."
+        mvn --batch-mode --errors deploy -ntp -DskipTests
